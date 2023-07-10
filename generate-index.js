@@ -75,7 +75,7 @@ function getFiles(dir, ignore) {
 
 // Main
 
-const rootIgnoreFiles = [ 'index.html', path.basename(__filename) ];
+const rootIgnoreFiles = [ '.git', '.nojekyll', 'index.html', path.basename(__filename) ];
 
 fs.writeFileSync('index.html', toHTML('/', getFiles('.', rootIgnoreFiles)));
 
