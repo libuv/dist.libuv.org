@@ -1,0 +1,92 @@
+const fs = require('fs');
+const path = require('path');
+
+const NAME_MAX_LENGTH = 50;
+const DATE_MAX_LENGTH = 20;
+
+var PADDING_NAME = '                                                   '
+var PADDING_DATE = '                    '
+var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+
+function pad (s) {
+  return s < 10 ? ('0' + s) : ('' + s)
+}
+
+function toHTML (dir, list) {
+  if (dir[dir.length - 1] === '/') dir = dir.slice(0, -1)
+
+  var prev = `\n<a href="../">../</a>\n`
+  var pre = prev + list.map(renderEntry).join('')
+  var dirname = dir || '/'
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head><title>Index of ${dirname}</title></head>
+    <body bgcolor="white">
+        <h1>Index of ${dirname}</h1>
+        <hr>
+        <pre>
+            ${pre}
+        </pre>
+        <hr>
+    </body>
+    </html>
+  `;
+
+  function renderEntry (entry) {
+    var name = entry.name;
+    var isDir = entry.isDirectory();
+    var size = isDir ? '-' : '' + entry.size;
+    var mtime = new Date(entry.mtime);
+
+    var d = pad(mtime.getDate())
+    var m = MONTHS[mtime.getMonth()]
+    var y = mtime.getFullYear()
+    var h = pad(mtime.getHours())
+    var min = pad(mtime.getMinutes())
+    var time = `${d}-${m}-${y} ${h}:${min}`
+
+    if (isDir && name[name.length - 1] !== '/') name += '/'
+
+    var fname = elide(name, NAME_MAX_LENGTH);
+    var href = encodeURI(name)
+
+    return `<a href="${href}" title="${name}">${fname}</a>${''.padEnd(NAME_MAX_LENGTH - fname.length + 1) + time.padEnd(DATE_MAX_LENGTH) + size}\n`
+  }
+}
+
+function elide(name, maxLength) {
+  if (name.length > maxLength) return name.slice(0, maxLength - 3) + '..>'
+  return name
+}
+
+function getFiles(dir, ignore) {
+    return fs.readdirSync(dir, { withFileTypes: true })
+        .filter(d => (d.isFile() || d.isDirectory()) && !ignore.includes(d.name))
+        .map(d => {
+            const st = fs.statSync(path.join(dir, d.name));
+            d.size = st.size;
+            d.mtime = st.mtime;
+            return d;
+        });
+}
+
+// Main
+
+const rootIgnoreFiles = [ 'index.html', path.basename(__filename) ];
+
+fs.writeFileSync('index.html', toHTML('/', getFiles('.', rootIgnoreFiles)));
+
+// Dist
+
+const distIgnoreFiles = [ 'index.html' ];
+const distDirs = fs.readdirSync('dist').filter(d => !distIgnoreFiles.includes(d)).sort();
+
+for (const d of distDirs) {
+    const distDir = `dist/${d}`;
+    fs.writeFileSync(`${distDir}/index.html`, toHTML(distDir, getFiles(distDir, distIgnoreFiles)));
+}
+
+fs.writeFileSync('dist/index.html', toHTML('dist', getFiles('dist', rootIgnoreFiles)));
