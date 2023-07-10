@@ -4,8 +4,6 @@ const path = require('path');
 const NAME_MAX_LENGTH = 50;
 const DATE_MAX_LENGTH = 20;
 
-var PADDING_NAME = '                                                   '
-var PADDING_DATE = '                    '
 var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 
@@ -66,22 +64,41 @@ function getFiles(dir, ignore) {
     return fs.readdirSync(dir, { withFileTypes: true })
         .filter(d => (d.isFile() || d.isDirectory()) && !ignore.includes(d.name))
         .map(d => {
-            const st = fs.statSync(path.join(dir, d.name));
-            d.size = st.size;
-            d.mtime = st.mtime;
+            const p = path.join(dir, d.name);
+            if (!metadata[p]) {
+                const st = fs.statSync(p);
+                metadata[p] = {
+                    size: st.size,
+                    mtime: st.mtime
+                };
+            }
+            d.size = metadata[p].size;
+            d.mtime = metadata[p].mtime;
+
             return d;
         });
 }
 
+// Metadata
+
+var metadata = {};
+
+try {
+    metadata = require('./metadata.json');
+} catch(_) {}
+
 // Main
 
-const rootIgnoreFiles = [ '.git', '.nojekyll', 'index.html', path.basename(__filename) ];
+const rootIgnoreFiles = [ '.git', '.nojekyll', 'metadata.json', 'index.html', path.basename(__filename) ];
 
 fs.writeFileSync('index.html', toHTML('/', getFiles('.', rootIgnoreFiles)));
 
 // Dist
 
 const distIgnoreFiles = [ 'index.html' ];
+
+fs.writeFileSync('dist/index.html', toHTML('dist', getFiles('dist', rootIgnoreFiles)));
+
 const distDirs = fs.readdirSync('dist').filter(d => !distIgnoreFiles.includes(d)).sort();
 
 for (const d of distDirs) {
@@ -89,4 +106,4 @@ for (const d of distDirs) {
     fs.writeFileSync(`${distDir}/index.html`, toHTML(distDir, getFiles(distDir, distIgnoreFiles)));
 }
 
-fs.writeFileSync('dist/index.html', toHTML('dist', getFiles('dist', rootIgnoreFiles)));
+fs.writeFileSync('./metadata.json', JSON.stringify(metadata));
