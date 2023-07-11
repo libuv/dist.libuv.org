@@ -89,7 +89,7 @@ try {
 
 // Main
 
-const rootIgnoreFiles = [ '.git', '.nojekyll', 'metadata.json', 'index.html', path.basename(__filename) ];
+const rootIgnoreFiles = [ '.git', '.nojekyll', 'CNAME', 'metadata.json', 'index.html', path.basename(__filename) ];
 
 fs.writeFileSync('index.html', toHTML('/', getFiles('.', rootIgnoreFiles)));
 
