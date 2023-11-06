@@ -39,11 +39,11 @@ function toHTML (dir, list) {
     var size = isDir ? '-' : '' + entry.size;
     var mtime = new Date(entry.mtime);
 
-    var d = pad(mtime.getDate())
-    var m = MONTHS[mtime.getMonth()]
-    var y = mtime.getFullYear()
-    var h = pad(mtime.getHours())
-    var min = pad(mtime.getMinutes())
+    var d = pad(mtime.getUTCDate())
+    var m = MONTHS[mtime.getUTCMonth()]
+    var y = mtime.getUTCFullYear()
+    var h = pad(mtime.getUTCHours())
+    var min = pad(mtime.getUTCMinutes())
     var time = `${d}-${m}-${y} ${h}:${min}`
 
     if (isDir && name[name.length - 1] !== '/') name += '/'
@@ -62,7 +62,7 @@ function elide(name, maxLength) {
 
 function getFiles(dir, ignore) {
     return fs.readdirSync(dir, { withFileTypes: true })
-        .filter(d => (d.isFile() || d.isDirectory()) && !ignore.includes(d.name))
+        .filter(d => (d.isFile() || d.isDirectory()) && !ignore.includes(d.name) && !d.name.startsWith('.'))
         .map(d => {
             const p = path.join(dir, d.name);
             if (!metadata[p]) {
@@ -89,7 +89,7 @@ try {
 
 // Main
 
-const rootIgnoreFiles = [ '.git', '.nojekyll', 'CNAME', 'metadata.json', 'index.html', path.basename(__filename) ];
+const rootIgnoreFiles = [ 'CNAME', 'metadata.json', 'index.html', path.basename(__filename) ];
 
 fs.writeFileSync('index.html', toHTML('/', getFiles('.', rootIgnoreFiles)));
 
