@@ -99,7 +99,10 @@ const distIgnoreFiles = [ 'index.html' ];
 
 fs.writeFileSync('dist/index.html', toHTML('dist', getFiles('dist', rootIgnoreFiles)));
 
-const distDirs = fs.readdirSync('dist').filter(d => !distIgnoreFiles.includes(d)).sort();
+const distDirs = fs.readdirSync('dist', { withFileTypes: true })
+                   .filter(d => d.isDirectory())
+                   .map(d => d.name)
+                   .sort();
 
 for (const d of distDirs) {
     const distDir = `dist/${d}`;
